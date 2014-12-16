@@ -1,0 +1,24 @@
+---
+- name: Check if bedrock is pulled from git
+  stat: path={{ www_root }}/{{ item.site_name }}/current/web/
+  register: bedrock_exists
+  with_items: wordpress_sites
+
+- name: Check if .env file exsits
+  stat: path={{ www_root }}/{{ item.site_name }}/current/.env
+  register: env_exists
+  with_items: wordpress_sites
+
+- name: remove old .env file if needing to pull bedrock from git
+  shell: rm {{ www_root }}/{{ item.item.site_name }}/current/.env
+  with_items: env_exists.results
+  ignore_errors: yes
+  when: item.stat.exists == true
+
+- name: Pull Bedrock from git
+  git: repo=git://github.com/roots/bedrock
+    dest={{ www_root }}/{{ item.item.site_name }}/current
+    accept_hostkey=yes
+  with_items: bedrock_exists.results
+  ignore_errors: yes
+  when: item.stat.exists == false
